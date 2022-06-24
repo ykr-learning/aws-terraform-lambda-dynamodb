@@ -1,0 +1,21 @@
+Quand un fichier est déposé/uploadé dans s3
+avec un vpc ou un tag
+declenchement de la lambda
+listing des instaces correspondant aux criteres
+enregistrement des données dans une base de données dynamodb
+
+
+
+s3 
+
+
+
+
+fonction lambda qui récupére toutes les instances d'un vpc et d'enregistrer ses états dans une base de données dynamodb
+
+
+
+deploiement de la fonction lambda de façon automatisée via git.
+
+
+
