@@ -1,7 +1,7 @@
 Quand un fichier est déposé/uploadé dans s3
 avec un vpc ou un tag
 declenchement de la lambda
-listing des instaces correspondant aux criteres
+listing des instances correspondant aux criteres
 enregistrement des données dans une base de données dynamodb
 
 
