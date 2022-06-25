@@ -8,7 +8,7 @@ data "aws_availability_zones" "available" {
 }
 
 resource "aws_s3_bucket" "b" {
-  bucket = "tp6-lambda-dynamodb-bucket"
+  bucket = var.bucket_name
 
   tags = {
     tp = "tp6"
@@ -51,7 +51,9 @@ resource "aws_iam_policy" "tp6_lambda_role_policy" {
         "Action" : [
           "ec2:Describe*",
           "ec2:Start*",
-          "ec2:Stop*"
+          "ec2:Stop*",
+          "s3:Get*",
+          "s3:List*"
         ],
         "Resource" : "*"
       }
@@ -88,20 +90,26 @@ resource "aws_lambda_function" "tp6_lambda" {
 
   runtime = "python3.9"
 
+
+  environment {
+    variables = {
+      S3_BUCKET = "${var.bucket_name}"
+    }
+  }
+
   tags = {
     tp = "tp6"
   }
-
 }
 
 resource "aws_dynamodb_table" "tp6_dynamo_table" {
- name = "tp6_dynamo_table"
- billing_mode = "PROVISIONED"
- read_capacity= "5"
- write_capacity= "5"
- attribute {
-  name = "keyId"
-  type = "S"
- }
- hash_key = "keyId"
+  name           = "tp6_dynamo_table"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = "5"
+  write_capacity = "5"
+  attribute {
+    name = "keyId"
+    type = "S"
+  }
+  hash_key = "keyId"
 }
