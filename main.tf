@@ -1,5 +1,6 @@
 provider "aws" {
-  region = var.aws_region
+  region                   = var.aws_region
+  shared_credentials_files = ["$HOME/.aws/credentials"]
 }
 
 data "aws_availability_zones" "available" {
@@ -19,10 +20,10 @@ resource "aws_s3_bucket_acl" "example" {
   acl    = "private"
 }
 
-data "aws_iam_policy_document" "lambda_assume_role_policy"{
+data "aws_iam_policy_document" "lambda_assume_role_policy" {
   statement {
     effect  = "Allow"
-    actions = ["sts:AssumeRole"]    
+    actions = ["sts:AssumeRole"]
     principals {
       type        = "Service"
       identifiers = ["lambda.amazonaws.com"]
@@ -34,26 +35,26 @@ resource "aws_iam_policy" "tp6_lambda_role_policy" {
   name = "tp6_lambda_role_policy"
 
   policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": "arn:aws:logs:*:*:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:Describe*",
-                "ec2:Start*",
-                "ec2:Stop*"
-            ],
-            "Resource": "*"
-        }
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Resource" : "arn:aws:logs:*:*:*"
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "ec2:Describe*",
+          "ec2:Start*",
+          "ec2:Stop*"
+        ],
+        "Resource" : "*"
+      }
     ]
   })
 }
@@ -91,4 +92,16 @@ resource "aws_lambda_function" "tp6_lambda" {
     tp = "tp6"
   }
 
+}
+
+resource "aws_dynamodb_table" "tp6_dynamo_table" {
+ name = "tp6_dynamo_table"
+ billing_mode = "PROVISIONED"
+ read_capacity= "5"
+ write_capacity= "5"
+ attribute {
+  name = "keyId"
+  type = "S"
+ }
+ hash_key = "keyId"
 }
