@@ -19,27 +19,48 @@ def load_content(content):
 
 
 def get_status_instance_id(instance_id):
-    logger.info("get_status_instance_id instance_id={id}".format(id=instance_id))
-    ec2_client=boto3.client('ec2', region_name=os.environ['AWS_REGION'])
+    logger.info(
+        "get_status_instance_id instance_id={id}".format(id=instance_id))
+    ec2_client = boto3.client('ec2', region_name=os.environ['AWS_REGION'])
     status = 'None'
     try:
-        response = ec2_client.describe_instance_status(InstanceIds=[instance_id], IncludeAllInstances=True)
+        response = ec2_client.describe_instance_status(
+            InstanceIds=[instance_id], IncludeAllInstances=True)
         status = response['InstanceStatuses'][0]['InstanceState']['Name']
-        logger.debug("response={response}".format(response=json.dumps(response, indent = 4)))
+        logger.debug("response={response}".format(
+            response=json.dumps(response, indent=4)))
 
     except Exception:
         status = 'Not found !'
 
-    logger.info("status of instance id {id} is {status}".format(id = instance_id, status = status))
+    logger.info("status of instance id {id} is {status}".format(
+        id=instance_id, status=status))
 
     return {"id": instance_id, "status": status}
 
+def save_instance_status(dynamodb_table, instance_status):
+    client_dynamodb = boto3.client('dynamodb')
+    logger.info(
+        "save_status instance_status={status}".format(status=instance_status))
+    data = client_dynamodb.put_item(
+        TableName=dynamodb_table,
+        Item={
+            'id': {
+            'S': instance_status['id']
+            },
+            'status': {
+            'S': instance_status['status']
+            }
+        }
+    )
 
 def lambda_handler(event, context):
-    
+
     bucket_name = os.environ['S3_BUCKET']
-    logger.info("bucket_name={bucket}".format(bucket=bucket_name))
+    dynamodb_table = os.environ['DYNAMODB_TABLE']
     logger.info("region={region}".format(region=os.environ['AWS_REGION']))
+    logger.info("bucket_name={bucket}".format(bucket=bucket_name))
+    logger.info("dynamodb_table={name}".format(name=dynamodb_table))
 
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(bucket_name)
@@ -52,15 +73,13 @@ def lambda_handler(event, context):
         body = obj.get()['Body'].read()
         logger.info("bucket obj body=\n{body}".format(body=body))
         instances_ids = load_content(body)
-        instances_statuses = []
-        for i in instances_ids:
-            instances_statuses.append(get_status_instance_id(i))
-        for instance_status in instances_statuses:
-            logger.info("instance status: {status}".format(status=instance_status))
+        instances_statuses = [get_status_instance_id(i) for i in instances_ids]
 
+        for i in instances_statuses:
+            logger.info("instance status: {status}".format(status=i))
+            save_instance_status(dynamodb_table, i)
 
     return {
         'statusCode': 200,
         'body': "end!"
     }
-

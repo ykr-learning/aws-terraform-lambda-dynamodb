@@ -15,6 +15,21 @@ resource "aws_s3_bucket" "b" {
   }
 }
 
+# Upload an object
+resource "aws_s3_bucket_object" "file_instances_ids" {
+
+  bucket = aws_s3_bucket.b.id
+
+  key = var.file_instances_ids_name
+
+  acl = "private" # or can be "public-read"
+
+  source = "./${var.file_instances_ids_name}"
+
+  etag = filemd5("./${var.file_instances_ids_name}")
+
+}
+
 resource "aws_s3_bucket_acl" "example" {
   bucket = aws_s3_bucket.b.id
   acl    = "private"
@@ -53,7 +68,8 @@ resource "aws_iam_policy" "tp6_lambda_role_policy" {
           "ec2:Start*",
           "ec2:Stop*",
           "s3:Get*",
-          "s3:List*"
+          "s3:List*",
+          "dynamodb:Put*"
         ],
         "Resource" : "*"
       }
@@ -93,7 +109,8 @@ resource "aws_lambda_function" "tp6_lambda" {
 
   environment {
     variables = {
-      S3_BUCKET = "${var.bucket_name}"
+      S3_BUCKET      = "${var.bucket_name}"
+      DYNAMODB_TABLE = "${var.dynamodb_table_name}"
     }
   }
 
@@ -103,13 +120,13 @@ resource "aws_lambda_function" "tp6_lambda" {
 }
 
 resource "aws_dynamodb_table" "tp6_dynamo_table" {
-  name           = "tp6_dynamo_table"
+  name           = var.dynamodb_table_name
   billing_mode   = "PROVISIONED"
   read_capacity  = "5"
   write_capacity = "5"
   attribute {
-    name = "keyId"
+    name = "id"
     type = "S"
   }
-  hash_key = "keyId"
+  hash_key = "id"
 }
