@@ -1,8 +1,9 @@
+from datetime import datetime
 import json
+import time
 import boto3
 import os
 import logging
-from textwrap import indent
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -42,17 +43,25 @@ def save_instance_status(dynamodb_table, instance_status):
     client_dynamodb = boto3.client('dynamodb')
     logger.info(
         "save_status instance_status={status}".format(status=instance_status))
+    expiry_date_time = int(time.time() + 24*3600*7)
     data = client_dynamodb.put_item(
         TableName=dynamodb_table,
         Item={
             'id': {
-            'S': instance_status['id']
+                'S': instance_status['id']
             },
             'status': {
-            'S': instance_status['status']
+                'S': instance_status['status']
+            },
+            'ttl': { 
+                'N': str(expiry_date_time) 
+            },
+            'datetime': { 
+                'S': datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             }
         }
     )
+    return data
 
 def lambda_handler(event, context):
 

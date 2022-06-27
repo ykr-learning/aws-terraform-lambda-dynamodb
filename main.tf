@@ -16,7 +16,7 @@ resource "aws_s3_bucket" "b" {
 }
 
 # Upload an object
-resource "aws_s3_bucket_object" "file_instances_ids" {
+resource "aws_s3_object" "file_instances_ids" {
 
   bucket = aws_s3_bucket.b.id
 
@@ -119,6 +119,8 @@ resource "aws_lambda_function" "tp6_lambda" {
   }
 }
 
+###     Dynamodb
+
 resource "aws_dynamodb_table" "tp6_dynamo_table" {
   name           = var.dynamodb_table_name
   billing_mode   = "PROVISIONED"
@@ -129,4 +131,26 @@ resource "aws_dynamodb_table" "tp6_dynamo_table" {
     type = "S"
   }
   hash_key = "id"
+}
+
+###     Rate the lambda each 5 minutes
+
+resource "aws_cloudwatch_event_rule" "every_five_minutes" {
+  name                = "tp6-every-five-minutes"
+  description         = "Fires every five minutes"
+  schedule_expression = "rate(5 minutes)"
+}
+
+resource "aws_cloudwatch_event_target" "check_tp6_lambda_every_five_minutes" {
+  rule      = aws_cloudwatch_event_rule.every_five_minutes.name
+  target_id = aws_lambda_function.tp6_lambda.function_name
+  arn       = aws_lambda_function.tp6_lambda.arn
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch_to_call_check_foo" {
+  statement_id  = "AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.tp6_lambda.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.every_five_minutes.arn
 }
